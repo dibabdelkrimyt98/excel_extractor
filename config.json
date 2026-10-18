@@ -1,0 +1,52 @@
+
+{
+  "output_file": "resultats_2026.xlsx",
+  "overwrite_output": true,
+  "empty_value": "VIDE",
+  "formula_mode": "cached_value",
+
+  "file_01": {
+    "input_file": "PAIE 09-2026.xlsx",
+    "sheet_name": "Feuil1",
+    "start_row": 2,
+    "columns": {
+      "CCP": "J",
+      "CIVILITE": "I",
+      "DATE NAISSANCE": "L",
+      "DATE RECRUT": "T",
+      "NATURE Contrat": "AG",
+      "DTP": "F"
+    }
+  },
+
+  "file_02": {
+    "input_file": "SORTIE 09-2026.xlsx",
+    "sheet_name": "SORTIE ANNEE 2026",
+    "start_row": 2,
+    "columns": {
+      "CCP": "L",
+      "CIVILITE": "H",
+      "DATE NAISSANCE": "N",
+      "DATE RECRUT": "V",
+      "DATE DEPART": "W",
+      "NATURE Contrat": "AI",
+      "DTP": "F",
+      "Motif Depart": "Y"
+    },
+
+    "date_filter": {
+      "column": "W",
+      "start_exclusive": "2025-12-31",
+      "end_exclusive": "2026-09-30",
+      "format": "%m/%d/%Y"
+    },
+
+    
+    "motif_filter": {
+      "field": "Motif Depart",
+      "column": "Y",
+      "exclude_value": "18"
+    }
+
+  }
+}

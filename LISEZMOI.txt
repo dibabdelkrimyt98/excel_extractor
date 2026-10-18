@@ -1,0 +1,17 @@
+MISE À JOUR : AJOUT AUTOMATIQUE DE LA COLONNE AGE
+
+1. Placez stat.py, stat_utils.py, stat_age.py, stat_sexe.py, stat_writer.py, stat_config.json et requirements.txt dans le même dossier que resultat.xlsx.
+2. Installez la dépendance si nécessaire : python -m pip install -r requirements.txt
+3. Vérifiez dans stat_config.json : reference_date = 2025-12-31, DATE NAISSANCE = C, date_formats = ["%m/%d/%Y"], age_output_column = I.
+4. Exécutez : python stat.py
+
+Le script ajoute ou met à jour la colonne I nommée AGE dans la feuille Extraction de resultat.xlsx. L'âge est un nombre entier d'années révolues au 31/12/2025, calculé selon la même logique que DATEDIF(date_naissance; date_reference; "Y"). Les dates textuelles sont lues uniquement au format MM/DD/YYYY. Les vraies cellules date Excel restent acceptées.
+
+Avant la première modification, une copie de sauvegarde resultat.xlsx.bak est créée. Si la colonne I contient déjà un autre en-tête que AGE, le script s'arrête pour éviter d'écraser une colonne existante.
+
+Exemples au 31/12/2025 :
+- 12/31/1989 -> 36 ans
+- 01/01/2000 -> 25 ans
+- 12/31/2000 -> 25 ans
+
+Remarque : aucune donnée confidentielle n'est envoyée ailleurs; le traitement s'effectue localement.

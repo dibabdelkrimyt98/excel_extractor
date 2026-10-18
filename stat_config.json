@@ -1,0 +1,52 @@
+{
+  "input_file": "resultats_2026.xlsx",
+  "output_file": "statistiques_2026.xlsx",
+  "sheet_name": "Resultats",
+  "header_row": 1,
+  "start_row": 2,
+  "reference_date": "2026-09-30",
+  "empty_value": "VIDE",
+  "date_formats": [
+    "%m/%d/%Y"
+  ],
+  "code_depart_column": null,
+  "columns": {
+    "CCP": "A",
+    "CIVILITE": "B",
+    "DATE NAISSANCE": "C",
+    "DATE RECRUTEMENT": "D",
+    "DATE DEPART": "E",
+    "NATURE CONTRAT": "F",
+    "DTP": "G",
+    "Motif DEPART": "H"
+  },
+  "age_bands": [
+    {
+      "label": "16-25 ans",
+      "min": 16,
+      "max": 25
+    },
+    {
+      "label": "26-35 ans",
+      "min": 26,
+      "max": 35
+    },
+    {
+      "label": "36-45 ans",
+      "min": 36,
+      "max": 45
+    },
+    {
+      "label": "46-55 ans",
+      "min": 46,
+      "max": 55
+    },
+    {
+      "label": ">55 ans",
+      "min": 56,
+      "max": null
+    }
+  ],
+  "age_output_column": "I",
+  "age_header": "AGE"
+}

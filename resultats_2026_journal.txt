@@ -1,0 +1,11 @@
+Journal Excel Extractor - fusion de deux fichiers
+Fichier de sortie : C:\Users\HP\Downloads\excel_extractor\resultats_2026.xlsx
+Nombre de lignes exportées : 28365
+Nombre de cellules remplacées : 0
+Nombre de lignes exclues pour motif : 0
+Nombre de lignes exclues pour date : 0
+
+
+--- Remplacements de cellules ---
+
+[TEMPS D'ÉCRITURE] Génération et sauvegarde de resultats_2026.xlsx : 16.085 seconde(s)
