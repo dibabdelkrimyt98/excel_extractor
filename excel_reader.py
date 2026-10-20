@@ -274,6 +274,48 @@ def validate_config(config: dict[str, Any]) -> None:
             )
 
 
+
+    # Validation du filtre du code de départ.
+    code_depart_filter = config["file_02"].get("code_depart_filter")
+
+    if code_depart_filter is not None:
+        if not isinstance(code_depart_filter, dict):
+            raise ConfigurationError(
+                "'file_02.code_depart_filter' doit être un objet JSON."
+            )
+
+        for key in ("column", "exclude_value"):
+            if key not in code_depart_filter:
+                raise ConfigurationError(
+                    f"Paramètre '{key}' manquant dans "
+                    "'file_02.code_depart_filter'."
+                )
+
+        code_column = code_depart_filter["column"]
+        if (
+            not isinstance(code_column, str)
+            or not code_column.strip().isalpha()
+        ):
+            raise ConfigurationError(
+                "'file_02.code_depart_filter.column' "
+                "doit être une colonne Excel."
+            )
+
+        try:
+            column_index_from_string(code_column.strip().upper())
+        except ValueError as exc:
+            raise ConfigurationError(
+                f"Colonne Excel invalide pour le code de départ : "
+                f"{code_column!r}."
+            ) from exc
+
+        if is_empty(code_depart_filter["exclude_value"]):
+            raise ConfigurationError(
+                "'file_02.code_depart_filter.exclude_value' "
+                "ne peut pas être vide."
+            )
+
+
 def is_empty(value: Any) -> bool:
     """Retourne True si la valeur est vide ou ne contient que des espaces."""
     return value is None or (
@@ -362,6 +404,15 @@ def _matches_excluded_value(
         return False
 
 
+
+def _normalize_comparison_text(value: Any) -> str:
+    """Normalise un texte pour une comparaison sans casse ni espaces superflus."""
+    if value is None:
+        return ""
+    return " ".join(str(value).split()).casefold()
+
+
+
 def read_one_file(
     file_key: str,
     section: dict[str, Any],
@@ -425,6 +476,20 @@ def read_one_file(
         }
 
         source_columns = list(dict.fromkeys(fields.values()))
+
+        # Ajouter les colonnes de filtrage au calcul de la dernière ligne utile.
+        code_depart_filter_for_rows = (
+            section.get("code_depart_filter")
+            if file_key == "file_02"
+            else None
+        )
+        if code_depart_filter_for_rows:
+            code_col_for_rows = (
+                code_depart_filter_for_rows["column"].strip().upper()
+            )
+            if code_col_for_rows not in source_columns:
+                source_columns.append(code_col_for_rows)
+
         start_row = section["start_row"]
 
         # Recherche de la dernière ligne utile.
@@ -441,6 +506,7 @@ def read_one_file(
 
         empty_count = 0
         excluded_motif_count = 0
+        excluded_code_depart_count = 0
         excluded_date_count = 0
 
         # ---------------------------------------------------------
@@ -504,11 +570,74 @@ def read_one_file(
         )
 
         # ---------------------------------------------------------
+        # Configuration du filtre du code de départ
+        # ---------------------------------------------------------
+        code_depart_filter = (
+            section.get("code_depart_filter")
+            if file_key == "file_02"
+            else None
+        )
+        code_depart_column = (
+            code_depart_filter["column"].strip().upper()
+            if code_depart_filter
+            else None
+        )
+        excluded_code_depart_value = (
+            code_depart_filter["exclude_value"]
+            if code_depart_filter
+            else None
+        )
+
+        # ---------------------------------------------------------
         # Lecture des lignes
         # ---------------------------------------------------------
         for row_idx in range(start_row, last_row + 1):
 
-            # 1. Filtre des dates de départ.
+            # 1. Filtre du code de départ : X == 18.
+            if code_depart_filter:
+                code_value = ws_values[
+                    f"{code_depart_column}{row_idx}"
+                ].value
+
+                if _matches_excluded_value(
+                    code_value,
+                    excluded_code_depart_value,
+                ):
+                    excluded_code_depart_count += 1
+
+                    message = (
+                        f"[EXCLUSION][CODE DEPART] "
+                        f"{input_path.name} | "
+                        f"{sheet_name}!{code_depart_column}{row_idx} | "
+                        f"valeur={code_value!r} | "
+                        f"code exclu={excluded_code_depart_value!r}"
+                    )
+                    print(message, flush=True)
+                    warnings.append({
+                        "type": "exclusion_code_depart",
+                        "source_file": input_path.name,
+                        "source_sheet": sheet_name,
+                        "source_row": row_idx,
+                        "source_column": code_depart_column,
+                        "value": code_value,
+                        "message": message,
+                    })
+                    exclusion_details.append({
+                        "type": "code_depart",
+                        "source_file": input_path.name,
+                        "source_sheet": sheet_name,
+                        "source_row": row_idx,
+                        "source_column": code_depart_column,
+                        "source_cell": f"{code_depart_column}{row_idx}",
+                        "value": code_value,
+                        "reason": (
+                            f"Code de départ égal à "
+                            f"{excluded_code_depart_value!r}"
+                        ),
+                    })
+                    continue
+
+            # 2. Filtre des dates de départ.
             if date_filter:
                 raw_date = ws_values[
                     f"{date_column}{row_idx}"
@@ -594,9 +723,9 @@ def read_one_file(
                         "message": message,
                     })
 
-                elif _matches_excluded_value(
-                    motif_value,
-                    excluded_motif_value,
+                elif (
+                    _normalize_comparison_text(motif_value)
+                    == _normalize_comparison_text(excluded_motif_value)
                 ):
                     excluded_motif_count += 1
 
@@ -711,6 +840,7 @@ def read_one_file(
         print(
             f"[BILAN LECTURE] {input_path.name} | "
             f"lignes retenues={len(records)} | "
+            f"codes départ exclus={excluded_code_depart_count} | "
             f"motifs exclus={excluded_motif_count} | "
             f"dates exclues={excluded_date_count} | "
             f"cellules vides remplacées={empty_count}",
@@ -727,6 +857,7 @@ def read_one_file(
             "warnings": warnings,
             "empty_count": empty_count,
             "excluded_motif_count": excluded_motif_count,
+            "excluded_code_depart_count": excluded_code_depart_count,
             "excluded_date_count": excluded_date_count,
 
             "read_seconds": read_seconds,
@@ -823,6 +954,10 @@ def read_configured_files(
         "excluded_motif_count": (
             data_01["excluded_motif_count"]
             + data_02["excluded_motif_count"]
+        ),
+        "excluded_code_depart_count": (
+            data_01["excluded_code_depart_count"]
+            + data_02["excluded_code_depart_count"]
         ),
         "excluded_date_count": (
             data_01["excluded_date_count"]

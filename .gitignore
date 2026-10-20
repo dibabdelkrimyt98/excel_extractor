@@ -1,0 +1,9 @@
+*.py[cod]
+__pycache__/
+*.py[cod]
+.~lock.*#
+*.xlsx
+*.xls
+*.xlsm
+*.bak
+*_journal.txt
